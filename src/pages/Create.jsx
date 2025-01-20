@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Create = () => {
   const { user } = useAuth();
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImages, setUploadedImages] = useState([]);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,12 +27,12 @@ const Create = () => {
   };
 
   const handleImageUpload = (url) => {
-    setUploadedImage(url);
+    setUploadedImages(prev => [...prev, url]);
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!uploadedImage || !user) return;
+    if (!uploadedImages || !user) return;
 
     try {
       setLoading(true);
@@ -42,7 +42,7 @@ const Create = () => {
         Style: ${formData.style}. Lighting: ${formData.lighting}. ${formData.additional}`;
 
       // Train model
-      const trainResult = await trainModel(uploadedImage, prompt);
+      const trainResult = await trainModel(uploadedImages, prompt);
       
       // Generate image
       const generateResult = await generateImage(trainResult.model_id, prompt);
@@ -52,7 +52,7 @@ const Create = () => {
       // Save to Firebase
       await addDoc(collection(db, 'portraits'), {
         userId: user.uid,
-        originalImage: uploadedImage,
+        originalImage: uploadedImages,
         generatedImage: generateResult.image_url,
         prompt,
         createdAt: new Date().toISOString(),
@@ -75,9 +75,9 @@ const Create = () => {
           <h2 className="text-xl font-semibold mb-4">1. Upload Your Photo</h2>
           <ImageUpload onImageUpload={handleImageUpload} />
           
-          {uploadedImage && (
+          {uploadedImages && (
             <div className="mt-4">
-              <img src={uploadedImage} alt="Uploaded" className="max-w-full rounded-lg" />
+              <img src={uploadedImages} className="max-w-full rounded-lg" />
             </div>
           )}
         </div>
@@ -159,9 +159,9 @@ const Create = () => {
 
             <button
               type="submit"
-              disabled={!uploadedImage || loading}
+              disabled={!uploadedImages || loading}
               className={`w-full p-3 rounded-lg text-white font-semibold ${
-                !uploadedImage || loading
+                !uploadedImages || loading
                   ? 'bg-gray-400'
                   : 'bg-purple-600 hover:bg-purple-700'
               }`}
