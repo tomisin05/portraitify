@@ -47,6 +47,12 @@ const Navigation = () => {
                 >
                   Create Portrait
                 </Link>
+                <Link
+                  to="/gallery"
+                  className="text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md"
+                >
+                  My Gallery
+                </Link>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-700">
                     {user.email}
