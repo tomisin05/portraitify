@@ -53,12 +53,7 @@ const Navigation = () => {
                 >
                   My Gallery
                 </Link>
-                <Link
-                  to="/checkout"
-                  className="text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md"
-                >
-                  Checkout
-                </Link>
+                
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-700">
                     {user.email}

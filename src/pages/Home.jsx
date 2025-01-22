@@ -43,12 +43,12 @@ const Home = () => {
                 </Link>
             </div>
 
-            <footer className="bg-gray-800 text-white py-4">
+            {/* <footer className="bg-gray-800 text-white py-4">
                 <div className="container mx-auto text-center">
                     <p>&copy; {new Date().getFullYear()} Your Company Name. All rights reserved.</p>
                     <p>Follow us on social media!</p>
                 </div>
-            </footer>
+            </footer> */}
         </div>
     );
 };

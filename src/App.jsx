@@ -3,7 +3,6 @@ import Home from './pages/Home';
 import Create from './pages/Create';
 import Navigation from './components/NavBar';
 import Gallery from './pages/Gallery';
-import Checkout from './pages/Checkout';
 import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
 import { Elements } from '@stripe/react-stripe-js';
@@ -21,11 +20,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<Create />} />
             <Route path="/gallery" element={<Gallery />} />
-            <Route path='/checkout' element={
-              <Elements stripe={stripePromise}>
-                <Checkout />
-              </Elements>
-            } />
           </Routes>
         </div>
       </Router>
