@@ -1,3 +1,4 @@
+import { getDoc } from 'firebase/firestore';
 // import React, { createContext, useContext, useState, useEffect } from 'react';
 // import { 
 //   auth,
@@ -65,6 +66,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -84,17 +86,59 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signUp = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+    // Create a new user with email and password
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        console.log("User created:", user);
+
+        // Add user to Firestore
+        const usersRef = collection(db, 'users');
+        setDoc(doc(usersRef, user.uid), {
+          uid: user.uid,
+          email: user.email,
+          credits: 0,
+          createdAt: new Date(),
+        }).then(() => {
+          console.log("User added to Firestore");
+        }).catch((error) => {
+          console.error("Error adding user to Firestore:", error);
+        });
+
+        return user;
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.error("Error creating user:", errorCode, errorMessage);
+        throw error;
+      });
+    // return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signIn = (email, password) => {
     return signInWithEmailAndPassword(auth, email, password);
+
   };
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      // Check if user already exists in Firestore
+      const usersRef = collection(db, 'users'); 
+      const userDoc = await getDoc(doc(usersRef, user.uid));
+      if (!userDoc.exists()) {
+        // Add user to Firestore
+        await setDoc(doc(usersRef, user.uid), {
+          uid: user.uid,
+          email: user.email,
+          credits: 0,
+          createdAt: new Date(),
+        });
+      }
       return result;
     } catch (error) {
       console.error("Error signing in with Google:", error);

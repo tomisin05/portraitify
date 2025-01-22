@@ -18,6 +18,10 @@ const Create = () => {
   const [selectedModelId, setSelectedModelId] = useState(null);
   const [userModels, setUserModels] = useState([]);
   const [modelName, setModelName] = useState('');
+  const [credits, setCredits] = useState(0);
+  const trainingCost = 2.50; // Cost to train a model
+  const generationCost = 0.25; // Cost to generate a portrait
+
   const userId = auth.currentUser.uid;
   const [formData, setFormData] = useState({
     attire: '',
@@ -43,6 +47,17 @@ const Create = () => {
     if (user) {
       fetchUserModels();
     }
+    const fetchUserCredits = async () => {
+        if (user) {
+            const userRef = doc(db, 'users', user.uid); // Assuming user data is stored in 'users' collection
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+                setCredits(userDoc.data().credits || 0);
+            }
+        }
+    };
+
+    fetchUserCredits();
   }, [user]);
 
   const fetchUserModels = async () => {
@@ -65,6 +80,7 @@ const Create = () => {
 
   // Fetch user's portraits
 const fetchUserPortraits = async () => {
+
     try {
       const portraitsRef = collection(db, 'portraits');
       const q = query(
@@ -160,6 +176,10 @@ const fetchUserPortraits = async () => {
 
 
 const handleTrain = async () => {
+    if (credits < trainingCost) {
+        alert('Insufficient credits to train a model.');
+        return;
+    }
     if (!uploadedImages || !user || !modelName.trim()) {
         alert('Please upload an image and provide a model name');
         return;
@@ -194,6 +214,11 @@ const handleTrain = async () => {
         // Refresh the models list
         await fetchUserModels();
         setSelectedModelId(model_id);
+
+        await updateDoc(doc(db, 'users', user.uid), {
+            credits: credits - trainingCost,
+        });
+        setCredits(prev => prev - trainingCost);
         alert('Training completed successfully!');
     } catch (error) {
         console.error('Error training model:', error);
@@ -204,6 +229,11 @@ const handleTrain = async () => {
 };
 
   const handleGenerate = async () => {
+    if (credits < generationCost) {
+        alert('Insufficient credits to generate a portrait.');
+        return;
+    }
+
     if (!selectedModelId || !user) {
       alert('Please select a model first');
       return;
@@ -212,7 +242,7 @@ const handleTrain = async () => {
     try {
       setLoading(true);
       
-      const prompt = `${userId} A highly professional portrait photo of a person wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
+      const prompt = `${userId} A highly professional portrait photo of ${userId} wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
       The style is ${formData.style || "modern and clean"}. 
       Lighting is ${formData.lighting || "soft natural light"}.
       The photo should feature a ${formData.pose || "confident and approachable"} pose. 
@@ -247,6 +277,12 @@ const handleTrain = async () => {
             await updateDoc(portraitRef, {
                 generatedImages: updatedImages,
             });
+            
+            await updateDoc(doc(db, 'users', user.uid), {
+                credits: credits - generationCost,
+            });
+            setCredits(prev => prev - generationCost);
+            alert('Portrait generated successfully!');
         } else {
             // If the document does not exist, create it with the new image URL
             await setDoc(portraitRef, {
@@ -464,6 +500,7 @@ const handleTrain = async () => {
 return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
+      <p className="font-medium ">Your current credits: ${credits.toFixed(2)}</p>
       
       {/* Model Selection Section with Active Model Display */}
       <div className="mb-6">

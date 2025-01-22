@@ -3,8 +3,13 @@ import Home from './pages/Home';
 import Create from './pages/Create';
 import Navigation from './components/NavBar';
 import Gallery from './pages/Gallery';
+import Checkout from './pages/Checkout';
 import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 function App() {
   return (
@@ -16,6 +21,11 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<Create />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path='/checkout' element={
+              <Elements stripe={stripePromise}>
+                <Checkout />
+              </Elements>
+            } />
           </Routes>
         </div>
       </Router>
