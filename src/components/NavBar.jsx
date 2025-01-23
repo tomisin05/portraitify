@@ -53,7 +53,7 @@ const Navigation = () => {
                 >
                   My Gallery
                 </Link>
-                
+
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-700">
                     {user.email}
@@ -79,12 +79,12 @@ const Navigation = () => {
                   />
                   Sign in with Google
                 </button>
-                <Link 
+                {/* <Link 
                   to="/login" 
                   className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
                 >
                   Login
-                </Link>
+                </Link> */}
               </div>
             )}
           </div>
