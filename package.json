@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node src/backend/server.js"
+    "start": "node api/webhook/route.js"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.2",
