@@ -52,7 +52,7 @@ dotenv.config();
 const stripe = new Stripe(process.env.VITE_STRIPE_SECRET_KEY);
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173' })); // Replace with your frontend URL
+app.use(cors({ origin: 'https://portraitify.vercel.app/' })); // Replace with your frontend URL
 // app.use(bodyParser.raw({ type: 'application/json' }));
 
 // Webhook endpoint to handle Stripe events
