@@ -234,7 +234,7 @@ const handleTrain = async () => {
   };
 
 
-const paymentLink = 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY' // 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY'; // 'https://buy.stripe.com/test_6oEeXC7nIeQXdA4144'; 
+const paymentLink = 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY'; // 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY'; // 'https://buy.stripe.com/test_6oEeXC7nIeQXdA4144'; 
 
     const handleCheckout = () => {
         window.open(paymentLink, '_blank', 'noopener,noreferrer'); 
