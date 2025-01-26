@@ -56,7 +56,7 @@ const ImageUpload = ({ onImageUpload }) => {
   const [dragOver, setDragOver] = useState(false);
 
   const validateFile = (file) => {
-    const validTypes = ['imag e / j p e g', 'image/png', 'image/jpg'];
+    const validTypes = ['image / j p e g', 'image/png', 'image/jpg'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
