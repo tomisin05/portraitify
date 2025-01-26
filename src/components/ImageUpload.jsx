@@ -65,7 +65,7 @@ const ImageUpload = ({ onImageUpload }) => {
     }
     if (file.size > maxSize) {
       alert(`${file.name} is too large (max 5MB)`);
-      return false;
+      return false; 
     }
     return true;
   };
