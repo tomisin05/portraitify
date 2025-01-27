@@ -212,9 +212,3 @@ const ImageUpload = ({ onImageUpload }) => {
 export default ImageUpload; 
 
 
-
-
-
-
-
-
