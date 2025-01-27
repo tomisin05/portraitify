@@ -209,5 +209,5 @@ const ImageUpload = ({ onImageUpload }) => {
   );
 };
 
-export default ImageUpload;
+export default ImageUpload; 
 
