@@ -215,7 +215,7 @@ export default ImageUpload;
 
 //
 
-;
+
 
 //
 //
