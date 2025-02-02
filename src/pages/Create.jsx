@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import ImageUpload from '../components/ImageUpload';
 import { trainModel, generateImage } from '../lib/fai/client';
 import { db } from '../lib/firebase/config';
-import { collection, addDoc, query,where, getDocs, getDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, query,where, getDocs, getDoc, doc, setDoc, updateDoc, increment, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { createZipFromImages, uploadZipToStorage } from '../utils/zipHandler';
 import { auth } from '../lib/firebase/config';
-
-
+import { getCheckoutUrl } from '../lib/firebase/stripePayments';
+import { initFirebase } from '../lib/firebase/config';
 
 
 const Create = () => {
@@ -47,18 +47,11 @@ const Create = () => {
     if (user) {
       fetchUserModels();
     }
-    const fetchUserCredits = async () => {
-        if (user) {
-            const userRef = doc(db, 'users', user.uid); // Assuming user data is stored in 'users' collection
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-                setCredits(userDoc.data().credits || 0);
-            }
-        }
-    };
 
     fetchUserCredits();
   }, [user]);
+
+  
 
   const fetchUserModels = async () => {
     try {
@@ -78,34 +71,6 @@ const Create = () => {
     }
   };
 
-  // Fetch user's portraits
-const fetchUserPortraits = async () => {
-
-    try {
-      const portraitsRef = collection(db, 'portraits');
-      const q = query(
-        portraitsRef,
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const portraits = [];
-      
-      querySnapshot.forEach((doc) => {
-        portraits.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      return portraits;
-    } catch (error) {
-      console.error('Error fetching portraits:', error);
-      throw error;
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -118,7 +83,67 @@ const fetchUserPortraits = async () => {
     setUploadedImages(prev => [...prev, url]);
   };
 
-const handleTrain = async () => {
+
+  // Function to handle the checkout session
+  const handleCheckoutSession = async () => {    
+    const userIdOrigin = user.uid;
+    // Access the payments subcollection for the customer
+    const customerRef = doc(db, 'customers', userIdOrigin); // Assuming userId is the document ID in customers
+    const customerDoc = await getDoc(customerRef); // Get the customer document
+    const email = customerDoc.data().email;
+
+
+    const userId = await getUserIdByEmail(email); // Function to get user ID by email
+
+    if (userId) {    
+        
+        const paymentsRef = collection(customerRef, 'payments'); // Reference to the payments subcollection
+
+        // Query to get the latest payment (you can adjust this based on your needs)
+        const paymentsQuery = query(paymentsRef, where('status', '==', 'succeeded'), orderBy('created', 'desc'), limit(1)); // Adjust the query as needed
+        const snapshot = await getDocs(paymentsQuery);
+
+        if (!snapshot.empty) {
+          const paymentData = snapshot.docs[0].data(); // Get the most recent payment data
+          const amountPaid = paymentData.amount; // Get the amount paid
+
+          console.log(`Updating credits for user with email ${email} and amount ${amountPaid}`);
+          await updateUserCredits(userId, amountPaid); // Function to update user credits
+        } else {
+            console.log(`No successful payments found for user: ${email}`);
+        }
+    } else {
+        console.log(`No user found for email: ${email}`);
+    }
+};
+
+// Function to get user ID by email
+const getUserIdByEmail = async (email) => {
+    const usersRef = collection(db, 'users'); // Use the collection function
+    const q = query(usersRef, where('email', '==', email)); // Create a query
+    const snapshot = await getDocs(q); // Use getDocs to fetch the documents
+
+    if (!snapshot.empty) {
+        console.log(`User found for email ${email}:`, snapshot.docs[0].id); // Log found user ID
+        return snapshot.docs[0].id; // Return the first matching user ID
+    }
+    console.log(`No user found for email: ${email}`); // Log if no user found
+    return null; // No user found
+};
+
+// Function to update user credits in Firebase
+const updateUserCredits = async (userId, amount) => {
+    const userRef = doc(db, 'users', userId);
+    const credits = amount / 100;
+
+    console.log(`Updating credits for user ${userId} with amount ${credits}`);
+    await updateDoc(userRef, {
+        credits: increment(credits), // Increment credits by the amount paid
+    });
+};
+
+
+  const handleTrain = async () => {
     if (credits < trainingCost) {
         alert('Insufficient credits to train a model.');
         return;
@@ -234,12 +259,47 @@ const handleTrain = async () => {
   };
 
 
-const paymentLink = 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY'; // 'https://buy.stripe.com/00g7ws6B06Hz7lKfYY'; // 'https://buy.stripe.com/test_6oEeXC7nIeQXdA4144'; 
+//   const handleCheckoutSession = async (session, amount) => {
+//     const email = session.email; // Get the email from the session
+//     const userId = await getUserIdByEmail(email); // Function to get user ID by email
 
-    const handleCheckout = () => {
-        window.open(paymentLink, '_blank', 'noopener,noreferrer'); 
+//     if (userId) {
+//         await updateUserCredits(userId, amount); // Update user credits
+//     } else {
+//         console.log(`No user found for email: ${email}`);
+//     }
+// };
+
+
+
+
+    const fetchUserCredits = async () => {
+        if (user) {
+            const userRef = doc(db, 'users', user.uid); // Assuming user data is stored in 'users' collection
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+                setCredits(userDoc.data().credits || 0); // Update credits state
+            }
+        }
     };
 
+
+
+
+
+    const handleCheckout = async () => {
+        try {
+            const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
+            const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
+            window.open(checkoutUrl, '_blank', 'noopener,noreferrer'); // Open the checkout URL in a new tab
+            // await handleCheckoutSession();
+
+            fetchUserCredits(); //updates credits
+        } catch (error) {
+            console.error('Error getting checkout URL:', error);
+            alert('Failed to initiate checkout. Please try again.');
+        }
+    };
 // return (
 //     <div className="container mx-auto px-4 py-8">
 //       <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
@@ -611,4 +671,7 @@ return (
 };
 
 export default Create;
+
+
+
 
