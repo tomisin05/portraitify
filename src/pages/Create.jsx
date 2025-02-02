@@ -8,7 +8,7 @@ import { createZipFromImages, uploadZipToStorage } from '../utils/zipHandler';
 import { auth } from '../lib/firebase/config';
 import { getCheckoutUrl } from '../lib/firebase/stripePayments';
 import { initFirebase } from '../lib/firebase/config';
-import { Timestamp } from 'firebase/firestore';
+// import { Timestamp } from 'firebase/firestore';
 
 
 const Create = () => {
@@ -84,106 +84,6 @@ const Create = () => {
     const handleImageUpload = (url) => {
         setUploadedImages(prev => [...prev, url]);
     };
-
-    function areTimesEqual(firebaseTimestamp, numberTimestamp) {
-        console.log("Timestamps:", firebaseTimestamp, numberTimestamp)
-        // Convert Firebase timestamp to JavaScript Date
-        const firebaseDate = firebaseTimestamp.toDate();
-
-        // Convert number timestamp to JavaScript Date
-        const numberDate = new Date(numberTimestamp * 1000)
-
-        // Extract year, month, day, hour, and minute (ignoring seconds)
-        const formatDate = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
-        console.log("Dates: ", formatDate(firebaseDate), formatDate(numberDate), numberDate, numberTimestamp);
-
-        return formatDate(firebaseDate) === formatDate(numberDate);
-    }
-
-    // Function to handle the checkout session
-    const handleCheckoutSession = async () => {
-        const userIdOrigin = user.uid;
-        // Access the payments sub collection for the customer
-        const customerRef = doc(db, 'customers', userIdOrigin); // Assuming userId is the document ID in customers
-        const customerDoc = await getDoc(customerRef); // Get the customer document
-        const email = customerDoc.data().email;
-
-
-
-        const userId = await getUserIdByEmail(email); // Function to get user ID by email
-
-        if (userId) {
-
-            const paymentsRef = collection(customerRef, 'payments'); // Reference to the payments sub collection
-
-            const checkoutSessionRef = collection(customerRef, 'checkout_sessions');
-            const checkoutSessionQuery = query(checkoutSessionRef, where('mode', '==', 'payment'), orderBy('created', 'desc'), limit(1));
-            const checkoutSessionSnapshot = await getDocs(checkoutSessionQuery);
-
-
-            // Query to get the latest payment (you can adjust this based on your needs)
-            const paymentsQuery = query(paymentsRef, where('status', '==', 'succeeded'), orderBy('created', 'desc'), limit(1)); // Adjust the query as needed
-            const snapshot = await getDocs(paymentsQuery);
-
-            if (!snapshot.empty) {
-                const paymentData = snapshot.docs[0].data(); // Get the most recent payment data
-                const amountPaid = paymentData.amount; // Get the amount paid
-                const time = paymentData.created;
-                console.log(`Latest payment amount: ${amountPaid}`);
-
-                const checkoutData = checkoutSessionSnapshot.docs;
-                const checkoutTime = checkoutData[0].data().created;
-
-
-                // compare the date without seconds for  both time and checkoutTime
-                if (!areTimesEqual(checkoutTime, time)) {
-                    console.log("Time, checkoutTime", time, checkoutTime)
-                    console.log("Times are not equal");
-                    return "Times are not equal";
-                }
-
-
-
-                console.log(`Updating credits for user with email ${email} and amount ${amountPaid}`);
-                await updateUserCredits(userId, amountPaid); // Function to update user credits
-            } else {
-                console.log(`No successful payments found for user: ${email}`);
-                return "No successful payments found";
-            }
-        } else {
-            console.log(`No user found for email: ${email}`);
-            return "No user found";
-        }
-    };
-
-    // Function to get user ID by email
-    const getUserIdByEmail = async (email) => {
-        const usersRef = collection(db, 'users'); // Use the collection function
-        const q = query(usersRef, where('email', '==', email)); // Create a query
-        const snapshot = await getDocs(q); // Use getDocs to fetch the documents
-
-        if (!snapshot.empty) {
-            console.log(`User found for email ${email}:`, snapshot.docs[0].id); // Log found user ID
-            return snapshot.docs[0].id; // Return the first matching user ID
-        }
-        console.log(`No user found for email: ${email}`); // Log if no user found
-        return null; // No user found
-    };
-
-    // Function to update user credits in Firebase
-    const updateUserCredits = async (userId, amount) => {
-        const userRef = doc(db, 'users', userId);
-        const credits = amount / 100;
-
-
-
-        console.log(`Updating credits for user ${userId} with amount ${credits}`);
-        await updateDoc(userRef, {
-            credits: increment(credits), // Increment credits by the amount paid
-        });
-    };
-
-
 
     const handleTrain = async () => {
 
@@ -302,20 +202,6 @@ const Create = () => {
     };
 
 
-    //   const handleCheckoutSession = async (session, amount) => {
-    //     const email = session.email; // Get the email from the session
-    //     const userId = await getUserIdByEmail(email); // Function to get user ID by email
-
-    //     if (userId) {
-    //         await updateUserCredits(userId, amount); // Update user credits
-    //     } else {
-    //         console.log(`No user found for email: ${email}`);
-    //     }
-    // };
-
-
-
-
     const fetchUserCredits = async () => {
         if (user) {
             const userRef = doc(db, 'users', user.uid); // Assuming user data is stored in 'users' collection
@@ -328,22 +214,18 @@ const Create = () => {
         }
     };
 
-
-
-
-
     const handleCheckout = async () => {
         try {
             const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
             const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
-            window.open(checkoutUrl); // Open the checkout URL in a new tab
+            window.open(checkoutUrl, '_blank', 'noopener', 'noreferrer'); // Open the checkout URL in a new tab
             // wait till checkout is finished
 
-            let err = await handleCheckoutSession();
-            if (err) {
-                alert(err);
-                return;
-            }
+            // let err = await handleCheckoutSession();
+            // if (err) {
+            //     alert(err);
+            //     return;
+            // }
 
             fetchUserCredits(); //updates credits
         } catch (error) {
@@ -352,7 +234,288 @@ const Create = () => {
             return;
         }
     };
-    // return (
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
+            <p className="font-medium">Your current credits: ${credits.toFixed(2)}</p>
+            <div className="mb-6">
+                <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                    onClick={handleCheckout}
+                >
+                    Add more credits
+                </button>
+            </div>
+
+            {/* Model Selection Section with Active Model Display */}
+            <div className="mb-6">
+                <h2 className="text-xl font-bold mb-4">Select or Train New Model</h2>
+                {userModels.length > 0 && (
+                    <div className="mb-4">
+                        <label className="block mb-2">Choose Existing Model:</label>
+                        <select
+                            value={selectedModelId || ''}
+                            onChange={handleModelSelect}
+                            className="w-full p-2 border rounded"
+                        >
+                            <option value="">Select a model</option>
+                            {userModels.map((model) => (
+                                <option key={model.id} value={model.modelId}>
+                                    {model.name} - {new Date(model.createdAt).toLocaleDateString()}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Active Model Display */}
+                        {activeModel && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                                <h3 className="font-semibold text-lg mb-2">Active Model:</h3>
+                                <div className="flex items-start space-x-4">
+                                    <div>
+                                        <p className="font-medium">{activeModel.name}</p>
+                                        <p className="text-sm text-gray-600">
+                                            Created: {new Date(activeModel.createdAt).toLocaleDateString()}
+                                        </p>
+                                        <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Training Section */}
+                <div className="mt-6 p-4 bg-white rounded-lg border">
+                    <h3 className="text-lg font-semibold mb-2">Train New Model</h3>
+                    <div className="mb-4">
+                        <label className="block mb-2">Model Name:</label>
+                        <input
+                            type="text"
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            className="w-full p-2 border rounded"
+                            placeholder="Enter a name for your new model"
+                        />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {/* Section for Image Upload */}
+                        <div>
+                            <h2 className="text-xl font-semibold mb-4">1. Upload Your Photo</h2>
+                            <ImageUpload onImageUpload={handleImageUpload} />
+                            {uploadedImages.length > 0 && (
+                                <div className="mb-6">
+                                    <img src={uploadedImages[0]} alt="Uploaded" className="max-w-sm" />
+                                    <button
+                                        onClick={handleTrain}
+                                        disabled={loading}
+                                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                                    >
+                                        {loading ? 'Training...' : 'Train Model'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section for Form Inputs */}
+                        {userId && (
+                            <div>
+                                <h2 className="text-xl font-semibold mb-4">2. Customize Your Portrait</h2>
+                                <form className="space-y-4">
+                                    {['attire', 'setting', 'style', 'lighting', 'pose', 'additional'].map((field, index) => (
+                                        <div key={index}>
+                                            <label className="block text-sm font-medium mb-1">
+                                                {field.charAt(0).toUpperCase() + field.slice(1)}
+                                            </label>
+                                            {field === 'style' || field === 'lighting' || field === 'pose' ? (
+                                                <select
+                                                    name={field}
+                                                    value={formData[field]}
+                                                    onChange={handleInputChange}
+                                                    className="w-full p-2 border rounded"
+                                                    required
+                                                >
+                                                    <option value="">Select {field}</option>
+                                                    {/* Add options based on the field type */}
+                                                    {field === 'style' && (
+                                                        <>
+                                                            <option value="professional">Professional</option>
+                                                            <option value="creative">Creative</option>
+                                                            <option value="casual">Casual Professional</option>
+                                                            <option value="formal">Formal</option>
+                                                        </>
+                                                    )}
+                                                    {field === 'lighting' && (
+                                                        <>
+                                                            <option value="natural">Natural</option>
+                                                            <option value="studio">Studio</option>
+                                                            <option value="dramatic">Dramatic</option>
+                                                            <option value="soft">Soft</option>
+                                                        </>
+                                                    )}
+                                                    {field === 'pose' && (
+                                                        <>
+                                                            <option value="confident">Confident</option>
+                                                            <option value="approachable">Approachable</option>
+                                                            <option value="casual">Casual</option>
+                                                            <option value="professional">Professional</option>
+                                                            <option value="crossed arms">Crossed Arms</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type={field === 'additional' ? 'textarea' : 'text'}
+                                                    name={field}
+                                                    value={formData[field]}
+                                                    onChange={handleInputChange}
+                                                    placeholder={`e.g., ${field === 'attire' ? 'Business suit' : 'Details'}`}
+                                                    className="w-full p-2 border rounded"
+                                                    required
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerate}
+                                        disabled={loading}
+                                        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+                                    >
+                                        {loading ? 'Generating...' : 'Generate Portrait'}
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Create;
+
+
+
+
+    // function areTimesEqual(firebaseTimestamp, numberTimestamp) {
+    //     console.log("Timestamps:", firebaseTimestamp, numberTimestamp)
+    //     // Convert Firebase timestamp to JavaScript Date
+    //     const firebaseDate = firebaseTimestamp.toDate();
+
+    //     // Convert number timestamp to JavaScript Date
+    //     const numberDate = new Date(numberTimestamp * 1000)
+
+    //     // Extract year, month, day, hour, and minute (ignoring seconds)
+    //     const formatDate = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+    //     console.log("Dates: ", formatDate(firebaseDate), formatDate(numberDate), numberDate, numberTimestamp);
+
+    //     return formatDate(firebaseDate) === formatDate(numberDate);
+    // }
+
+        //   const handleCheckoutSession = async (session, amount) => {
+    //     const email = session.email; // Get the email from the session
+    //     const userId = await getUserIdByEmail(email); // Function to get user ID by email
+
+    //     if (userId) {
+    //         await updateUserCredits(userId, amount); // Update user credits
+    //     } else {
+    //         console.log(`No user found for email: ${email}`);
+    //     }
+    // };
+
+
+
+    // Function to handle the checkout session
+    // const handleCheckoutSession = async () => {
+    //     const userIdOrigin = user.uid;
+    //     // Access the payments sub collection for the customer
+    //     const customerRef = doc(db, 'customers', userIdOrigin); // Assuming userId is the document ID in customers
+    //     const customerDoc = await getDoc(customerRef); // Get the customer document
+    //     const email = customerDoc.data().email;
+
+
+
+    //     const userId = await getUserIdByEmail(email); // Function to get user ID by email
+
+    //     if (userId) {
+
+    //         const paymentsRef = collection(customerRef, 'payments'); // Reference to the payments sub collection
+
+    //         const checkoutSessionRef = collection(customerRef, 'checkout_sessions');
+    //         const checkoutSessionQuery = query(checkoutSessionRef, where('mode', '==', 'payment'), orderBy('created', 'desc'), limit(1));
+    //         const checkoutSessionSnapshot = await getDocs(checkoutSessionQuery);
+
+
+    //         // Query to get the latest payment (you can adjust this based on your needs)
+    //         const paymentsQuery = query(paymentsRef, where('status', '==', 'succeeded'), orderBy('created', 'desc'), limit(1)); // Adjust the query as needed
+    //         const snapshot = await getDocs(paymentsQuery);
+
+    //         if (!snapshot.empty) {
+    //             const paymentData = snapshot.docs[0].data(); // Get the most recent payment data
+    //             const amountPaid = paymentData.amount; // Get the amount paid
+    //             const time = paymentData.created;
+    //             console.log(`Latest payment amount: ${amountPaid}`);
+
+    //             const checkoutData = checkoutSessionSnapshot.docs;
+    //             const checkoutTime = checkoutData[0].data().created;
+
+
+    //             // compare the date without seconds for  both time and checkoutTime
+    //             if (!areTimesEqual(checkoutTime, time)) {
+    //                 console.log("Time, checkoutTime", time, checkoutTime)
+    //                 console.log("Times are not equal");
+    //                 return "Times are not equal";
+    //             }
+
+
+
+    //             console.log(`Updating credits for user with email ${email} and amount ${amountPaid}`);
+    //             await updateUserCredits(userId, amountPaid); // Function to update user credits
+    //         } else {
+    //             console.log(`No successful payments found for user: ${email}`);
+    //             return "No successful payments found";
+    //         }
+    //     } else {
+    //         console.log(`No user found for email: ${email}`);
+    //         return "No user found";
+    //     }
+    // };
+
+    // Function to get user ID by email
+    // const getUserIdByEmail = async (email) => {
+    //     const usersRef = collection(db, 'users'); // Use the collection function
+    //     const q = query(usersRef, where('email', '==', email)); // Create a query
+    //     const snapshot = await getDocs(q); // Use getDocs to fetch the documents
+
+    //     if (!snapshot.empty) {
+    //         console.log(`User found for email ${email}:`, snapshot.docs[0].id); // Log found user ID
+    //         return snapshot.docs[0].id; // Return the first matching user ID
+    //     }
+    //     console.log(`No user found for email: ${email}`); // Log if no user found
+    //     return null; // No user found
+    // };
+
+    // // Function to update user credits in Firebase
+    // const updateUserCredits = async (userId, amount) => {
+    //     const userRef = doc(db, 'users', userId);
+    //     const credits = amount / 100;
+
+
+
+    //     console.log(`Updating credits for user ${userId} with amount ${credits}`);
+    //     await updateDoc(userRef, {
+    //         credits: increment(credits), // Increment credits by the amount paid
+    //     });
+    // };
+
+
+
+        // return (
     //     <div className="container mx-auto px-4 py-8">
     //       <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
     //       <p className="font-medium ">Your current credits: ${credits.toFixed(2)}</p>
@@ -555,175 +718,4 @@ const Create = () => {
     //     </div>
     //     </div>
     //   );
-
-
-    return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
-            <p className="font-medium">Your current credits: ${credits.toFixed(2)}</p>
-            <div className="mb-6">
-                <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded"
-                    onClick={handleCheckout}
-                >
-                    Add more credits
-                </button>
-            </div>
-
-            {/* Model Selection Section with Active Model Display */}
-            <div className="mb-6">
-                <h2 className="text-xl font-bold mb-4">Select or Train New Model</h2>
-                {userModels.length > 0 && (
-                    <div className="mb-4">
-                        <label className="block mb-2">Choose Existing Model:</label>
-                        <select
-                            value={selectedModelId || ''}
-                            onChange={handleModelSelect}
-                            className="w-full p-2 border rounded"
-                        >
-                            <option value="">Select a model</option>
-                            {userModels.map((model) => (
-                                <option key={model.id} value={model.modelId}>
-                                    {model.name} - {new Date(model.createdAt).toLocaleDateString()}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Active Model Display */}
-                        {activeModel && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                                <h3 className="font-semibold text-lg mb-2">Active Model:</h3>
-                                <div className="flex items-start space-x-4">
-                                    <div>
-                                        <p className="font-medium">{activeModel.name}</p>
-                                        <p className="text-sm text-gray-600">
-                                            Created: {new Date(activeModel.createdAt).toLocaleDateString()}
-                                        </p>
-                                        <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Active
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Training Section */}
-                <div className="mt-6 p-4 bg-white rounded-lg border">
-                    <h3 className="text-lg font-semibold mb-2">Train New Model</h3>
-                    <div className="mb-4">
-                        <label className="block mb-2">Model Name:</label>
-                        <input
-                            type="text"
-                            value={modelName}
-                            onChange={(e) => setModelName(e.target.value)}
-                            className="w-full p-2 border rounded"
-                            placeholder="Enter a name for your new model"
-                        />
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* Section for Image Upload */}
-                        <div>
-                            <h2 className="text-xl font-semibold mb-4">1. Upload Your Photo</h2>
-                            <ImageUpload onImageUpload={handleImageUpload} />
-                            {uploadedImages.length > 0 && (
-                                <div className="mb-6">
-                                    <img src={uploadedImages[0]} alt="Uploaded" className="max-w-sm" />
-                                    <button
-                                        onClick={handleTrain}
-                                        disabled={loading}
-                                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-                                    >
-                                        {loading ? 'Training...' : 'Train Model'}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Section for Form Inputs */}
-                        {userId && (
-                            <div>
-                                <h2 className="text-xl font-semibold mb-4">2. Customize Your Portrait</h2>
-                                <form className="space-y-4">
-                                    {['attire', 'setting', 'style', 'lighting', 'pose', 'additional'].map((field, index) => (
-                                        <div key={index}>
-                                            <label className="block text-sm font-medium mb-1">
-                                                {field.charAt(0).toUpperCase() + field.slice(1)}
-                                            </label>
-                                            {field === 'style' || field === 'lighting' || field === 'pose' ? (
-                                                <select
-                                                    name={field}
-                                                    value={formData[field]}
-                                                    onChange={handleInputChange}
-                                                    className="w-full p-2 border rounded"
-                                                    required
-                                                >
-                                                    <option value="">Select {field}</option>
-                                                    {/* Add options based on the field type */}
-                                                    {field === 'style' && (
-                                                        <>
-                                                            <option value="professional">Professional</option>
-                                                            <option value="creative">Creative</option>
-                                                            <option value="casual">Casual Professional</option>
-                                                            <option value="formal">Formal</option>
-                                                        </>
-                                                    )}
-                                                    {field === 'lighting' && (
-                                                        <>
-                                                            <option value="natural">Natural</option>
-                                                            <option value="studio">Studio</option>
-                                                            <option value="dramatic">Dramatic</option>
-                                                            <option value="soft">Soft</option>
-                                                        </>
-                                                    )}
-                                                    {field === 'pose' && (
-                                                        <>
-                                                            <option value="confident">Confident</option>
-                                                            <option value="approachable">Approachable</option>
-                                                            <option value="casual">Casual</option>
-                                                            <option value="professional">Professional</option>
-                                                            <option value="crossed arms">Crossed Arms</option>
-                                                        </>
-                                                    )}
-                                                </select>
-                                            ) : (
-                                                <input
-                                                    type={field === 'additional' ? 'textarea' : 'text'}
-                                                    name={field}
-                                                    value={formData[field]}
-                                                    onChange={handleInputChange}
-                                                    placeholder={`e.g., ${field === 'attire' ? 'Business suit' : 'Details'}`}
-                                                    className="w-full p-2 border rounded"
-                                                    required
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={handleGenerate}
-                                        disabled={loading}
-                                        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
-                                    >
-                                        {loading ? 'Generating...' : 'Generate Portrait'}
-                                    </button>
-                                </form>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-
-
-};
-
-export default Create;
-
-
-
 
