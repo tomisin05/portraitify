@@ -172,6 +172,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth } from '../lib/firebase/config';
 
 const Gallery = () => {
+    console.log("User visited Gallery")
     const [portraits, setPortraits] = useState([]);
     const [loading, setLoading] = useState(true);
     const userId = auth.currentUser.uid; // Get the current user's ID

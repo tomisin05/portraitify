@@ -11,6 +11,7 @@ import { initFirebase } from '../lib/firebase/config';
 
 
 const Create = () => {
+    console.log("User visited Create")
   const { user } = useAuth();
   const [uploadedImages, setUploadedImages] = useState([]);
   const [generatedImage, setGeneratedImage] = useState(null);
