@@ -219,9 +219,10 @@ const Create = () => {
             const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
             const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
             window.open(checkoutUrl, '_blank', 'noopener', 'noreferrer'); // Open the checkout URL in a new tab
-            // wait till checkout is finished
 
-            // let err = await handleCheckoutSession();
+            // TODO: wait till checkout is finished
+
+            let err = await handleCheckoutSession();
             // if (err) {
             //     alert(err);
             //     return;
@@ -402,116 +403,103 @@ export default Create;
 
 
 
-    // function areTimesEqual(firebaseTimestamp, numberTimestamp) {
-    //     console.log("Timestamps:", firebaseTimestamp, numberTimestamp)
-    //     // Convert Firebase timestamp to JavaScript Date
-    //     const firebaseDate = firebaseTimestamp.toDate();
+    function areTimesEqual(firebaseTimestamp, numberTimestamp) {
+        console.log("Timestamps:", firebaseTimestamp, numberTimestamp)
+        // Convert Firebase timestamp to JavaScript Date
+        const firebaseDate = firebaseTimestamp.toDate();
 
-    //     // Convert number timestamp to JavaScript Date
-    //     const numberDate = new Date(numberTimestamp * 1000)
+        // Convert number timestamp to JavaScript Date
+        const numberDate = new Date(numberTimestamp * 1000)
 
-    //     // Extract year, month, day, hour, and minute (ignoring seconds)
-    //     const formatDate = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
-    //     console.log("Dates: ", formatDate(firebaseDate), formatDate(numberDate), numberDate, numberTimestamp);
+        // Extract year, month, day, hour, and minute (ignoring seconds)
+        const formatDate = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+        console.log("Dates: ", formatDate(firebaseDate), formatDate(numberDate), numberDate, numberTimestamp);
 
-    //     return formatDate(firebaseDate) === formatDate(numberDate);
-    // }
-
-        //   const handleCheckoutSession = async (session, amount) => {
-    //     const email = session.email; // Get the email from the session
-    //     const userId = await getUserIdByEmail(email); // Function to get user ID by email
-
-    //     if (userId) {
-    //         await updateUserCredits(userId, amount); // Update user credits
-    //     } else {
-    //         console.log(`No user found for email: ${email}`);
-    //     }
-    // };
-
-
+        return formatDate(firebaseDate) === formatDate(numberDate);
+    }
 
     // Function to handle the checkout session
-    // const handleCheckoutSession = async () => {
-    //     const userIdOrigin = user.uid;
-    //     // Access the payments sub collection for the customer
-    //     const customerRef = doc(db, 'customers', userIdOrigin); // Assuming userId is the document ID in customers
-    //     const customerDoc = await getDoc(customerRef); // Get the customer document
-    //     const email = customerDoc.data().email;
+    const handleCheckoutSession = async () => {
+        const userIdOrigin = user.uid;
+        // Access the payments sub collection for the customer
+        const customerRef = doc(db, 'customers', userIdOrigin); // Assuming userId is the document ID in customers
+        const customerDoc = await getDoc(customerRef); // Get the customer document
+        const email = customerDoc.data().email;
 
 
 
-    //     const userId = await getUserIdByEmail(email); // Function to get user ID by email
+        const userId = await getUserIdByEmail(email); // Function to get user ID by email
 
-    //     if (userId) {
+        if (userId) {
 
-    //         const paymentsRef = collection(customerRef, 'payments'); // Reference to the payments sub collection
+            const paymentsRef = collection(customerRef, 'payments'); // Reference to the payments sub collection
 
-    //         const checkoutSessionRef = collection(customerRef, 'checkout_sessions');
-    //         const checkoutSessionQuery = query(checkoutSessionRef, where('mode', '==', 'payment'), orderBy('created', 'desc'), limit(1));
-    //         const checkoutSessionSnapshot = await getDocs(checkoutSessionQuery);
-
-
-    //         // Query to get the latest payment (you can adjust this based on your needs)
-    //         const paymentsQuery = query(paymentsRef, where('status', '==', 'succeeded'), orderBy('created', 'desc'), limit(1)); // Adjust the query as needed
-    //         const snapshot = await getDocs(paymentsQuery);
-
-    //         if (!snapshot.empty) {
-    //             const paymentData = snapshot.docs[0].data(); // Get the most recent payment data
-    //             const amountPaid = paymentData.amount; // Get the amount paid
-    //             const time = paymentData.created;
-    //             console.log(`Latest payment amount: ${amountPaid}`);
-
-    //             const checkoutData = checkoutSessionSnapshot.docs;
-    //             const checkoutTime = checkoutData[0].data().created;
+            const checkoutSessionRef = collection(customerRef, 'checkout_sessions');
+            const checkoutSessionQuery = query(checkoutSessionRef, where('mode', '==', 'payment'), orderBy('created', 'desc'), limit(1));
+            const checkoutSessionSnapshot = await getDocs(checkoutSessionQuery);
 
 
-    //             // compare the date without seconds for  both time and checkoutTime
-    //             if (!areTimesEqual(checkoutTime, time)) {
-    //                 console.log("Time, checkoutTime", time, checkoutTime)
-    //                 console.log("Times are not equal");
-    //                 return "Times are not equal";
-    //             }
+            // Query to get the latest payment (you can adjust this based on your needs)
+            const paymentsQuery = query(paymentsRef, where('status', '==', 'succeeded'), orderBy('created', 'desc'), limit(1)); // Adjust the query as needed
+            const snapshot = await getDocs(paymentsQuery);
+
+            if (!snapshot.empty) {
+                const paymentData = snapshot.docs[0].data(); // Get the most recent payment data
+                const amountPaid = paymentData.amount; // Get the amount paid
+                const time = paymentData.created;
+                console.log(`Latest payment amount: ${amountPaid}`);
+
+                const checkoutData = checkoutSessionSnapshot.docs;
+                const checkoutTime = checkoutData[0].data().created;
+
+
+                // compare the date without seconds for  both time and checkoutTime
+                if (!areTimesEqual(checkoutTime, time)) {
+                    console.log("Time, checkoutTime", time, checkoutTime)
+                    console.log("Times are not equal");
+                    return "Times are not equal";
+                }
 
 
 
-    //             console.log(`Updating credits for user with email ${email} and amount ${amountPaid}`);
-    //             await updateUserCredits(userId, amountPaid); // Function to update user credits
-    //         } else {
-    //             console.log(`No successful payments found for user: ${email}`);
-    //             return "No successful payments found";
-    //         }
-    //     } else {
-    //         console.log(`No user found for email: ${email}`);
-    //         return "No user found";
-    //     }
-    // };
+                console.log(`Updating credits for user with email ${email} and amount ${amountPaid}`);
+                await updateUserCredits(userId, amountPaid); // Function to update user credits
+            } else {
+                console.log(`No successful payments found for user: ${email}`);
+                return "No successful payments found";
+            }
+        } else {
+            console.log(`No user found for email: ${email}`);
+            return "No user found";
+        }
+    };
 
     // Function to get user ID by email
-    // const getUserIdByEmail = async (email) => {
-    //     const usersRef = collection(db, 'users'); // Use the collection function
-    //     const q = query(usersRef, where('email', '==', email)); // Create a query
-    //     const snapshot = await getDocs(q); // Use getDocs to fetch the documents
+    const getUserIdByEmail = async (email) => {
+        const usersRef = collection(db, 'users'); // Use the collection function
+        const q = query(usersRef, where('email', '==', email)); // Create a query
+        const snapshot = await getDocs(q); // Use getDocs to fetch the documents
 
-    //     if (!snapshot.empty) {
-    //         console.log(`User found for email ${email}:`, snapshot.docs[0].id); // Log found user ID
-    //         return snapshot.docs[0].id; // Return the first matching user ID
-    //     }
-    //     console.log(`No user found for email: ${email}`); // Log if no user found
-    //     return null; // No user found
-    // };
+        if (!snapshot.empty) {
+            console.log(`User found for email ${email}:`, snapshot.docs[0].id); // Log found user ID
+            return snapshot.docs[0].id; // Return the first matching user ID
+        }
+        console.log(`No user found for email: ${email}`); // Log if no user found
+        return null; // No user found
+    };
 
-    // // Function to update user credits in Firebase
-    // const updateUserCredits = async (userId, amount) => {
-    //     const userRef = doc(db, 'users', userId);
-    //     const credits = amount / 100;
+    // Function to update user credits in Firebase
+    const updateUserCredits = async (userId, amount) => {
+        const userRef = doc(db, 'users', userId);
+        const credits = amount / 100;
 
 
 
-    //     console.log(`Updating credits for user ${userId} with amount ${credits}`);
-    //     await updateDoc(userRef, {
-    //         credits: increment(credits), // Increment credits by the amount paid
-    //     });
-    // };
+        console.log(`Updating credits for user ${userId} with amount ${credits}`);
+        await updateDoc(userRef, {
+            credits: increment(credits), // Increment credits by the amount paid
+        });
+    };
 
 
 
