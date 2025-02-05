@@ -31,8 +31,10 @@ export const getCheckoutUrl = async (app, priceId) => {
 
   const docRef = await addDoc(checkoutSessionRef, {
     price: priceId,
-    success_url: window.location.origin + '/create', // Explicitly route to /create
-    cancel_url: window.location.origin + '/create',  // Route back to /create even on cancel
+    // success_url: window.location.origin + '/create', // Explicitly route to /create
+    // cancel_url: window.location.origin + '/create',  // Route back to /create even on cancel
+    success_url: window.location.origin + '/create?success=true&closeWindow=true',
+    cancel_url: window.location.origin + '/create?canceled=true&closeWindow=true',
     mode: 'payment',
   });
 

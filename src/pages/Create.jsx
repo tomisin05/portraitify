@@ -314,9 +314,33 @@ const Create = () => {
         try {
             const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
             const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
-            window.location.href = checkoutUrl;
             
-            fetchUserCredits(); //updates credits
+            // Open checkout in a popup window
+            const popupWidth = 500;
+            const popupHeight = 700;
+            const left = (window.screen.width / 2) - (popupWidth / 2);
+            const top = (window.screen.height / 2) - (popupHeight / 2);
+
+            const checkoutWindow = window.open(
+            checkoutUrl,
+            'Checkout',
+            `width=${popupWidth},height=${popupHeight},left=${left},top=${top}`
+            );
+
+            // Poll for popup closure
+            const pollTimer = setInterval(() => {
+            if (checkoutWindow.closed) {
+                clearInterval(pollTimer);
+                // Refresh credits after window closes
+                fetchUserCredits();
+            }
+            }, 500);
+            
+            // fetchUserCredits(); //updates credits
+            // window.location.href = checkoutUrl;
+            
+            
+            
         } catch (error) {
             console.error('Error getting checkout URL:', error);
             alert('Failed to initiate checkout. Please try again.');
@@ -324,6 +348,14 @@ const Create = () => {
         }
     };
 
+    // In Create.jsx
+    useEffect(() => {
+        // Check if this is the popup window and should be closed
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('closeWindow') === 'true') {
+        window.close();
+        }
+    }, []);
     return (
         <div className="container mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Create Your Professional Portrait</h1>
