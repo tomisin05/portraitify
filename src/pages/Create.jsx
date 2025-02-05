@@ -314,16 +314,8 @@ const Create = () => {
         try {
             const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
             const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
-            window.open(checkoutUrl, '_blank', 'noopener', 'noreferrer'); // Open the checkout URL in a new tab
-
-            // TODO: wait till checkout is finished
-
-            // let err = await handleCheckoutSession();
-            // if (err) {
-            //     alert(err);
-            //     return;
-            // }
-
+            window.location.href = checkoutUrl;
+            
             fetchUserCredits(); //updates credits
         } catch (error) {
             console.error('Error getting checkout URL:', error);
