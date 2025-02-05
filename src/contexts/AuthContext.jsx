@@ -1,62 +1,10 @@
 import { getDoc } from 'firebase/firestore';
-// import React, { createContext, useContext, useState, useEffect } from 'react';
-// import { 
-//   auth,
-//   signInWithEmailAndPassword,
-//   createUserWithEmailAndPassword,
-//   signOut as firebaseSignOut,
-//   onAuthStateChanged
-// } from '../lib/firebase/config';
-
-// const AuthContext = createContext();
-
-// export const useAuth = () => useContext(AuthContext);
-
-// export const AuthProvider = ({ children }) => {
-//   const [user, setUser] = useState(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       setUser(user);
-//       setLoading(false);
-//     });
-
-//     return unsubscribe;
-//   }, []);
-
-//   const signUp = (email, password) => {
-//     return createUserWithEmailAndPassword(auth, email, password);
-//   };
-
-//   const signIn = (email, password) => {
-//     return signInWithEmailAndPassword(auth, email, password);
-//   };
-
-//   const signOut = () => {
-//     return firebaseSignOut(auth);
-//   };
-
-//   const value = {
-//     user,
-//     signUp,
-//     signIn,
-//     signOut,
-//   };
-
-//   return (
-//     <AuthContext.Provider value={value}>
-//       {!loading && children}
-//     </AuthContext.Provider>
-//   );
-// };
-
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   auth,
   db,
-  storage
+  storage,
+  initFirebase,
 } from '../lib/firebase/config';
 import { 
   signInWithEmailAndPassword,
@@ -67,6 +15,7 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { listenForPayments } from '../lib/firebase/stripePayments'; // Import your function
 
 const AuthContext = createContext();
 
@@ -76,6 +25,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
+  // Payment listener effect
+  useEffect(() => {
+    if (user) {
+      // Use your existing listenForPayments function
+      const unsubscribe = listenForPayments(initFirebase(), user.uid);
+      
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user]);
+
+  // Second useEffect for auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);

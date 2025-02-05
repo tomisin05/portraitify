@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
-    console.log("Home component rendered");
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
             <div className="container mx-auto px-4 py-16 text-center">

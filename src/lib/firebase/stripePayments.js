@@ -5,8 +5,15 @@ import {
   collection,
   getFirestore,
   onSnapshot,
+  doc, 
+  updateDoc, 
+  increment,
+  limit,
+  query,
+  orderBy
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 export const getCheckoutUrl = async (app, priceId) => {
   const auth = getAuth(app);
@@ -75,3 +82,42 @@ export const getPortalUrl = async (app) => {
     }
   });
 };
+
+
+
+// firebase listener that checks the payments sub collection and listens for newly updated payments with status succeeded and then updates the user credits in the user database with the credits
+export const listenForPayments = (app, userId) => {
+    const db = getFirestore(app);
+    const paymentsRef = collection(db, "customers", userId, "payments");
+
+    return onSnapshot(paymentsRef, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        const paymentDoc = change.doc;
+        const payment = paymentDoc.data();
+
+        if (change.type === "added" && 
+            !payment.processed && 
+            payment.status === "succeeded") {
+          try {
+            const credits = payment.amount / 100;
+            
+            // Update user credits
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+              credits: increment(credits),
+            });
+            
+            // Mark payment as processed in Firebase
+            await updateDoc(paymentDoc.ref, {
+              processed: true
+            });
+            
+            console.log(`Credits updated for user ${userId}: +${credits}`);
+          } catch (error) {
+            console.error('Error updating credits:', error);
+          }
+        }
+      });
+    });
+};
+
