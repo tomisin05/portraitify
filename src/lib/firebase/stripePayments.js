@@ -100,7 +100,7 @@ export const listenForPayments = (app, userId) => {
             payment.status === "succeeded") {
           try {
             const credits = payment.amount / 100;
-            
+             
             // Update user credits
             const userRef = doc(db, 'users', userId);
             await updateDoc(userRef, {
