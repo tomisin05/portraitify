@@ -116,10 +116,10 @@ const Create = () => {
             console.log('Training Result:', trainResult); // Add this line to inspect the response
 
             // Then handle the result based on the actual structure
-            if (trainResult && trainResult.diffusers_lora_file && trainResult.diffusers_lora_file.url) {
-                const loraWeightsUrl = trainResult.diffusers_lora_file.url;
+            if (trainResult && trainResult.data && trainResult.data.diffusers_lora_file && trainResult.data.diffusers_lora_file.url) {
+                const loraWeightsUrl = trainResult.data.diffusers_lora_file.url;
                 console.log('LoRA weights URL:', loraWeightsUrl);
-                const model_id = trainResult.config_file?.url || "tester"; // Add fallback
+                const model_id = trainResult.requestId || trainResult.data.config_file?.url; // Add fallback
 
                                
 
