@@ -12,7 +12,7 @@ const Home = () => {
                     Using advanced AI technology, we turn your everyday photos into stunning professional portraits.
                     Perfect for LinkedIn profiles, professional websites, or any occasion where you need to look your best.
                 </p>
-                <Link to="/create" className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg">
+                <Link to="/create" className="bg-purple-500 text-white px-6 py-3 rounded-lg text-lg">
                     Get Started
                 </Link>
             </div>
