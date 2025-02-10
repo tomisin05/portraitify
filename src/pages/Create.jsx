@@ -20,6 +20,9 @@ const Create = () => {
     const [userModels, setUserModels] = useState([]);
     const [modelName, setModelName] = useState('');
     const [credits, setCredits] = useState(0);
+    const [isCustomPrompt, setIsCustomPrompt] = useState(false);
+    const [customPrompt, setCustomPrompt] = useState('');
+
     const trainingCost = 2.50; // Cost to train a model
     const generationCost = 0.25; // Cost to generate a portrait
 
@@ -105,11 +108,20 @@ const Create = () => {
             console.log('Zip file uploaded successfully. Zip URL:', zipUrl); // Log the URL of the uploaded zip file
 
             // Train model with the zip URL
-            const trainResult = await trainModel(zipUrl, prompt);
+            const trainResult = await trainModel(zipUrl);
+            console.log('Model trained successfully.');
 
-            // Extract the LoRA weights URL from the training result
-            const loraWeightsUrl = trainResult.diffusers_lora_file.url;
-            const model_id = trainResult.config_file.url;
+
+
+            console.log('Training Result:', trainResult); // Add this line to inspect the response
+
+            // Then handle the result based on the actual structure
+            if (trainResult && trainResult.diffusers_lora_file && trainResult.diffusers_lora_file.url) {
+                const loraWeightsUrl = trainResult.diffusers_lora_file.url;
+                console.log('LoRA weights URL:', loraWeightsUrl);
+                const model_id = trainResult.config_file?.url || "tester"; // Add fallback
+
+                               
 
             // Save model information to Firestore
             await addDoc(collection(db, 'models'), {
@@ -130,6 +142,9 @@ const Create = () => {
             });
             setCredits(prev => prev - trainingCost);
             alert('Training completed successfully!');
+        } else {
+            throw new Error('Invalid training result structure');
+        }
         } catch (error) {
             console.error('Error training model:', error);
             alert('Failed to train model');
@@ -152,7 +167,7 @@ const Create = () => {
         try {
             setLoading(true);
 
-            const prompt = `${userId} A highly professional portrait photo of ${userId} wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
+            const prompt = isCustomPrompt ? `${userId} ${customPrompt}` : `${userId} A highly professional portrait photo of ${userId} wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
       The style is ${formData.style || "modern and clean"}. 
       Lighting is ${formData.lighting || "soft natural light"}.
       The photo should feature a ${formData.pose || "confident and approachable"} pose. 
@@ -189,6 +204,9 @@ const Create = () => {
                     generatedImages: [newImageUrl],
                     createdAt: new Date().toISOString(),
                 });
+
+                setCredits(prev => prev - generationCost);
+                alert('Portrait generated successfully!');
             }
 
             setGeneratedImage(newImageUrl);
@@ -445,7 +463,57 @@ const Create = () => {
                         {userId && (
                             <div>
                                 <h2 className="text-xl font-semibold mb-4">2. Customize Your Portrait</h2>
-                                <form className="space-y-4">
+
+                            {/* Prompt Type Toggle */}
+        <div className="mb-6">
+            <div className="flex items-center space-x-4">
+                <button
+                    type="button"
+                    onClick={() => setIsCustomPrompt(false)}
+                    className={`px-4 py-2 rounded-lg ${
+                        !isCustomPrompt 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-200 text-gray-700'
+                    }`}
+                >
+                    Guided Form
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setIsCustomPrompt(true)}
+                    className={`px-4 py-2 rounded-lg ${
+                        isCustomPrompt 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-200 text-gray-700'
+                    }`}
+                >
+                    Custom Prompt
+                </button>
+            </div>
+        </div>
+
+        {isCustomPrompt ? (
+            // Custom Prompt Input
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1">
+                        Write Your Custom Prompt
+                    </label>
+                    <textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Describe exactly how you want your portrait to look..."
+                        className="w-full p-2 border rounded min-h-[150px]"
+                        rows="6"
+                    />
+                    <p className="text-sm text-gray-500 mt-2">
+                        Tip: Be specific about style, setting, lighting, pose, and any other details you want to include.
+                    </p>
+                </div>
+            </div>
+        ) :
+
+                                (<form className="space-y-4">
                                     {['attire', 'setting', 'style', 'lighting', 'pose', 'additional'].map((field, index) => (
                                         <div key={index}>
                                             <label className="block text-sm font-medium mb-1">
@@ -500,7 +568,11 @@ const Create = () => {
                                             )}
                                         </div>
                                     ))}
-                                    <button
+                                    
+                                </form>)}
+                                    <div className='mt-8' >
+                                       
+                                <button
                                         type="button"
                                         onClick={handleGenerate}
                                         disabled={loading}
@@ -508,7 +580,7 @@ const Create = () => {
                                     >
                                         {loading ? 'Generating...' : 'Generate Portrait'}
                                     </button>
-                                </form>
+                                    </div>
                             </div>
                         )}
                     </div>

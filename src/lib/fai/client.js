@@ -35,7 +35,7 @@ fal.config({
 //   }
 // };
 
-export const trainModel = async (zipUrl, prompt) => {
+export const trainModel = async (zipUrl) => {
     const userId = auth.currentUser.uid;
     try {
       const result = await fal.subscribe('fal-ai/flux-lora-fast-training', {
