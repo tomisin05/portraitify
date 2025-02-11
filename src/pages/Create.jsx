@@ -330,7 +330,7 @@ const Create = () => {
 
     const handleCheckout = async () => {
         try {
-            const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q"; // Replace with your actual price ID
+            const priceId = "price_1QkFqCKo2XKH6T0KBZw4sAqr"; // Replace with your actual price ID
             const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId); // Get the checkout URL
             
             // Open checkout in a popup window
@@ -365,6 +365,55 @@ const Create = () => {
             return;
         }
     };
+
+
+    // const handleCheckout = async () => {
+    //     try {
+    //         // First check if customer exists and has a stripeId
+    //         const customerRef = doc(db, 'customers', user.uid);
+    //         const customerDoc = await getDoc(customerRef);
+    
+    //         if (!customerDoc.exists()) {
+    //             // Customer document doesn't exist
+    //             alert('Customer profile not found. Please try logging out and back in.');
+    //             return;
+    //         }
+    
+    //         const customerData = customerDoc.data();
+    //         if (!customerData.stripeId) {
+    //             // No Stripe ID found
+    //             alert('Stripe account not properly set up. Please contact support.');
+    //             return;
+    //         }
+    
+    //         const priceId = "price_1QndtPRpqV60o7Zn7ru5AZ3Q";
+    //         const checkoutUrl = await getCheckoutUrl(initFirebase(), priceId);
+    
+    //         // Rest of your popup window code...
+    //         const popupWidth = 500;
+    //         const popupHeight = 700;
+    //         const left = (window.screen.width / 2) - (popupWidth / 2);
+    //         const top = (window.screen.height / 2) - (popupHeight / 2);
+    
+    //         const checkoutWindow = window.open(
+    //             checkoutUrl,
+    //             'Checkout',
+    //             `width=${popupWidth},height=${popupHeight},left=${left},top=${top}`
+    //         );
+    
+    //         const pollTimer = setInterval(() => {
+    //             if (checkoutWindow.closed) {
+    //                 clearInterval(pollTimer);
+    //                 fetchUserCredits();
+    //             }
+    //         }, 500);
+    
+    //     } catch (error) {
+    //         console.error('Error getting checkout URL:', error);
+    //         alert('Failed to initiate checkout. Please try again.');
+    //     }
+    // };
+    
 
     // In Create.jsx
     useEffect(() => {
