@@ -1,9 +1,39 @@
-import { fal } from "@fal-ai/client";
 import { auth } from '../firebase/config';
 
-fal.config({
-  credentials: import.meta.env.VITE_FAL_API_KEY,
-});
+// Function to generate a portrait prompt based on an image and context
+// This simulates a Gemini API integration
+export const generatePromptFromImage = async (imageDataUrl, userContext = '') => {
+  try {
+    // In a real implementation, this would call a backend API that interfaces with Gemini
+    // For now, we'll simulate a response
+    
+    // Create a prompt based on the image and user context
+    let prompt = '';
+    
+    if (userContext && userContext.trim()) {
+      prompt = `A professional portrait with ${userContext.trim()}`;
+    } else {
+      // Default prompt elements if no context is provided
+      const styles = ['professional', 'artistic', 'dramatic', 'minimalist', 'vintage', 'modern'];
+      const lighting = ['soft natural', 'dramatic', 'studio', 'high contrast', 'moody', 'bright'];
+      const poses = ['confident', 'relaxed', 'professional', 'thoughtful', 'engaging', 'natural'];
+      
+      const style = styles[Math.floor(Math.random() * styles.length)];
+      const light = lighting[Math.floor(Math.random() * lighting.length)];
+      const pose = poses[Math.floor(Math.random() * poses.length)];
+      
+      prompt = `A ${style} portrait with ${light} lighting and a ${pose} pose. The image should have professional quality suitable for business profiles.`;
+    }
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return prompt;
+  } catch (error) {
+    console.error('Error generating prompt from image:', error);
+    throw error;
+  }
+};
 
 // export const trainModel = async (zipUrl, prompt) => {
 

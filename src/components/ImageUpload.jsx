@@ -1,62 +1,15 @@
-// import React, { useState } from 'react';
-// import { storage } from '../lib/firebase/config';
-// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import React, { useState, useCallback } from "react";
+import { storage } from "../lib/firebase/config";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-// const ImageUpload = ({ onImageUpload }) => {
-//   const [uploading, setUploading] = useState(false);
-
-//   const handleFileChange = async (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     try {
-//       setUploading(true);
-//       const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-//       await uploadBytes(storageRef, file);
-//       const url = await getDownloadURL(storageRef);
-//       onImageUpload(url);
-//     } catch (error) {
-//       console.error('Error uploading image:', error);
-//       alert('Failed to upload image');
-//     } finally {
-//       setUploading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="w-full">
-//       <label className="block w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-purple-500">
-//         <input
-//           type="file"
-//           className="hidden"
-//           accept="image/*"
-//           onChange={handleFileChange}
-//           disabled={uploading}
-//         />
-//         {uploading ? (
-//           <span>Uploading...</span>
-//         ) : (
-//           <span>Click or drag to upload your photo</span>
-//         )}
-//       </label>
-//     </div>
-//   );
-// };
-
-// export default ImageUpload;
-
-import React, { useState, useCallback } from 'react';
-import { storage } from '../lib/firebase/config';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-
-const ImageUpload = ({ onImageUpload }) => {
+const ImageUpload = ({ onImageUpload, uploadedImages }) => {
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [dragOver, setDragOver] = useState(false);
 
   const validateFile = (file) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const validTypes = ["image/jpeg", "image/png", "image/jpg"];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
@@ -65,7 +18,7 @@ const ImageUpload = ({ onImageUpload }) => {
     }
     if (file.size > maxSize) {
       alert(`${file.name} is too large (max 5MB)`);
-      return false; 
+      return false;
     }
     return true;
   };
@@ -76,21 +29,22 @@ const ImageUpload = ({ onImageUpload }) => {
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       uploadTask.on(
-        'state_changed',
+        "state_changed",
         (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploadProgress((prev) => ({
             ...prev,
             [file.name]: progress,
           }));
         },
         (error) => {
-          console.error('Error uploading:', error);
+          console.error("Error uploading:", error);
           alert(`Failed to upload ${file.name}`);
         },
         async () => {
           const url = await getDownloadURL(storageRef);
-          onImageUpload(url);
+          onImageUpload("add", url);
           setUploadProgress((prev) => ({
             ...prev,
             [file.name]: 100,
@@ -98,22 +52,22 @@ const ImageUpload = ({ onImageUpload }) => {
         }
       );
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
       alert(`Failed to upload ${file.name}`);
     }
   };
 
   const handleFiles = async (files) => {
     const validFiles = Array.from(files).filter(validateFile);
-    
+
     if (validFiles.length === 0) return;
 
     setSelectedFiles((prev) => [...prev, ...validFiles]);
     setUploading(true);
 
     // Upload all files
-    await Promise.all(validFiles.map(file => uploadFile(file)));
-    
+    await Promise.all(validFiles.map((file) => uploadFile(file)));
+
     setUploading(false);
   };
 
@@ -127,13 +81,21 @@ const ImageUpload = ({ onImageUpload }) => {
     handleFiles(e.dataTransfer.files);
   }, []);
 
-  const removeFile = (fileToRemove) => {
-    setSelectedFiles(files => files.filter(file => file !== fileToRemove));
-    setUploadProgress(progress => {
+  const removeFile = (file, index) => {
+    // Remove from selected files
+    setSelectedFiles((files) => files.filter((f, i) => i !== index));
+    
+    // Remove from upload progress
+    setUploadProgress((progress) => {
       const newProgress = { ...progress };
-      delete newProgress[fileToRemove.name];
+      delete newProgress[file.name];
       return newProgress;
     });
+    
+    // Tell parent to remove the URL at this index
+    if (uploadedImages && uploadedImages[index]) {
+      onImageUpload("remove", uploadedImages[index]);
+    }
   };
 
   return (
@@ -141,10 +103,16 @@ const ImageUpload = ({ onImageUpload }) => {
       {/* Upload Area */}
       <div
         className={`w-full p-4 border-2 border-dashed rounded-lg text-center cursor-pointer
-          ${dragOver ? 'border-purple-500 bg-purple-50' : 'border-gray-300'}
-          ${uploading ? 'opacity-50' : 'hover:border-purple-500'}`}
-        onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={(e) => { e.preventDefault(); setDragOver(false); }}
+          ${dragOver ? "border-purple-500 bg-purple-50" : "border-gray-300"}
+          ${uploading ? "opacity-50" : "hover:border-purple-500"}`}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+        }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
       >
@@ -175,25 +143,28 @@ const ImageUpload = ({ onImageUpload }) => {
                   alt={file.name}
                   className="w-full h-full object-cover"
                 />
-                
+
                 {/* Progress Overlay */}
-                {uploadProgress[file.name] && uploadProgress[file.name] < 100 && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <div className="mb-1">{Math.round(uploadProgress[file.name])}%</div>
-                      <div className="w-20 h-1 bg-gray-200 rounded-full">
-                        <div
-                          className="h-full bg-white rounded-full"
-                          style={{ width: `${uploadProgress[file.name]}%` }}
-                        />
+                {uploadProgress[file.name] &&
+                  uploadProgress[file.name] < 100 && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="mb-1">
+                          {Math.round(uploadProgress[file.name])}%
+                        </div>
+                        <div className="w-20 h-1 bg-gray-200 rounded-full">
+                          <div
+                            className="h-full bg-white rounded-full"
+                            style={{ width: `${uploadProgress[file.name]}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Remove Button */}
                 <button
-                  onClick={() => removeFile(file)}
+                  onClick={() => removeFile(file, index)}
                   className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                   type="button"
                 >
@@ -209,6 +180,4 @@ const ImageUpload = ({ onImageUpload }) => {
   );
 };
 
-export default ImageUpload; 
-
-
+export default ImageUpload;

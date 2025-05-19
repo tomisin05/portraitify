@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ImageUpload from '../components/ImageUpload';
-import { trainModel, generateImage } from '../lib/fai/client';
+import { trainModel, generateImage, generatePromptFromImage } from '../lib/fai/client';
 import { db } from '../lib/firebase/config';
 import { collection, addDoc, query, where, getDocs, getDoc, doc, setDoc, updateDoc, increment, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,8 @@ import { createZipFromImages, uploadZipToStorage } from '../utils/zipHandler';
 import { auth } from '../lib/firebase/config';
 import { getCheckoutUrl } from '../lib/firebase/stripePayments';
 import { initFirebase } from '../lib/firebase/config';
+import AIPromptGenerator from '../components/AIPromptGenerator';
+import SavedPrompts from '../components/SavedPrompts';
 // import { Timestamp } from 'firebase/firestore';
 
 
@@ -22,6 +24,7 @@ const Create = () => {
     const [credits, setCredits] = useState(0);
     const [isCustomPrompt, setIsCustomPrompt] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
+    const [isAIPromptGenerator, setIsAIPromptGenerator] = useState(false);
 
     const trainingCost = 2.50; // Cost to train a model
     const generationCost = 0.25; // Cost to generate a portrait
@@ -83,8 +86,14 @@ const Create = () => {
         }));
     };
 
-    const handleImageUpload = (url) => {
-        setUploadedImages(prev => [...prev, url]);
+    const handleImageUpload = (action, url) => {
+        if (action === "add") {
+            // Add a new image URL
+            setUploadedImages(prev => [...prev, url]);
+        } else if (action === "remove") {
+            // Remove an image URL
+            setUploadedImages(prev => prev.filter(item => item !== url));
+        }
     };
 
     const handleTrain = async () => {
@@ -167,7 +176,9 @@ const Create = () => {
         try {
             setLoading(true);
 
-            const prompt = isCustomPrompt ? `${userId} ${customPrompt}` : `${userId} A highly professional portrait photo of ${userId} wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
+            const prompt = isCustomPrompt || isAIPromptGenerator 
+                ? `${userId} ${customPrompt}` 
+                : `${userId} A highly professional portrait photo of ${userId} wearing ${formData.attire || "business casual"} in a ${formData.setting || "neutral studio background"} setting. 
       The style is ${formData.style || "modern and clean"}. 
       Lighting is ${formData.lighting || "soft natural light"}.
       The photo should feature a ${formData.pose || "confident and approachable"} pose. 
@@ -493,7 +504,7 @@ const Create = () => {
                         {/* Section for Image Upload */}
                         <div>
                             <h2 className="text-xl font-semibold mb-4">1. Upload Your Photo</h2>
-                            <ImageUpload onImageUpload={handleImageUpload} />
+                            <ImageUpload onImageUpload={handleImageUpload} uploadedImages={uploadedImages} />
                             {uploadedImages.length > 0 && (
                                 <div className="mb-6">
                                     <img src={uploadedImages[0]} alt="Uploaded" className="max-w-sm" />
@@ -518,9 +529,12 @@ const Create = () => {
             <div className="flex items-center space-x-4">
                 <button
                     type="button"
-                    onClick={() => setIsCustomPrompt(false)}
+                    onClick={() => {
+                        setIsCustomPrompt(false);
+                        setIsAIPromptGenerator(false);
+                    }}
                     className={`px-4 py-2 rounded-lg ${
-                        !isCustomPrompt 
+                        !isCustomPrompt && !isAIPromptGenerator
                             ? 'bg-purple-600 text-white' 
                             : 'bg-gray-200 text-gray-700'
                     }`}
@@ -529,19 +543,52 @@ const Create = () => {
                 </button>
                 <button
                     type="button"
-                    onClick={() => setIsCustomPrompt(true)}
+                    onClick={() => {
+                        setIsCustomPrompt(true);
+                        setIsAIPromptGenerator(false);
+                    }}
                     className={`px-4 py-2 rounded-lg ${
-                        isCustomPrompt 
+                        isCustomPrompt && !isAIPromptGenerator
                             ? 'bg-purple-600 text-white' 
                             : 'bg-gray-200 text-gray-700'
                     }`}
                 >
                     Custom Prompt
                 </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setIsAIPromptGenerator(true);
+                        setIsCustomPrompt(false);
+                    }}
+                    className={`px-4 py-2 rounded-lg ${
+                        isAIPromptGenerator
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-200 text-gray-700'
+                    }`}
+                >
+                    AI Prompt Generator
+                </button>
             </div>
         </div>
 
-        {isCustomPrompt ? (
+        {isAIPromptGenerator ? (
+            // AI Prompt Generator
+            <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <AIPromptGenerator 
+                            onPromptGenerated={(prompt) => setCustomPrompt(prompt)} 
+                        />
+                    </div>
+                    <div>
+                        <SavedPrompts 
+                            onSelectPrompt={(prompt) => setCustomPrompt(prompt)} 
+                        />
+                    </div>
+                </div>
+            </div>
+        ) : isCustomPrompt ? (
             // Custom Prompt Input
             <div className="space-y-4">
                 <div>
