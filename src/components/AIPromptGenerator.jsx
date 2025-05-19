@@ -26,8 +26,9 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
   };
 
   const generatePrompt = async () => {
-    if (!uploadedImage) {
-      alert("Please upload an image first");
+    // Check if either image or context is provided
+    if (!uploadedImage && !userContext.trim()) {
+      alert("Please either upload an image or provide context details");
       return;
     }
 
@@ -43,35 +44,53 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
         model: "gemini-1.5-pro-latest",
       });
 
-      // Create a prompt that instructs the model to create a standalone prompt
-      // without referencing the image itself
-      const systemPrompt = userContext
-        ? `Analyze this image and create a detailed portrait prompt that describes the style, lighting, pose, and mood. 
-           Include these additional details: ${userContext}
-           
-           IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases. 
-           The prompt should work on its own without seeing the original image.`
-        
-        : `Analyze this image and create a detailed portrait prompt that describes the style, lighting, pose, and mood.
-           
-           IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases.
-           The prompt should work on its own without seeing the original image.`;
+      let result;
+      
+      if (uploadedImage) {
+        // If image is provided, use vision capabilities
+        const systemPrompt = userContext
+          ? `Analyze this image and create a detailed portrait prompt that describes the style, lighting, pose, and mood. 
+             Include these additional details: ${userContext}
+             
+             IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases. 
+             The prompt should work on its own without seeing the original image.`
+          
+          : `Analyze this image and create a detailed portrait prompt that describes the style, lighting, pose, and mood.
+             
+             IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases.
+             The prompt should work on its own without seeing the original image.`;
 
-      const imagePart = {
-        inlineData: {
-          data: uploadedImage.split(",")[1],
-          mimeType: "image/jpeg",
-        },
-      };
-
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }, imagePart],
+        const imagePart = {
+          inlineData: {
+            data: uploadedImage.split(",")[1],
+            mimeType: "image/jpeg",
           },
-        ],
-      });
+        };
+
+        result = await model.generateContent({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt }, imagePart],
+            },
+          ],
+        });
+      } else {
+        // Text-only prompt if no image is provided
+        const textPrompt = `Create a detailed portrait prompt based on the following description: ${userContext}
+          
+          The prompt should describe style, lighting, pose, mood, and other visual elements for a professional portrait.
+          Make it detailed and specific enough to guide an AI image generator.`;
+          
+        result = await model.generateContent({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: textPrompt }],
+            },
+          ],
+        });
+      }
 
       const response = await result.response;
       const text = await response.text();
@@ -121,11 +140,14 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
     }
   };
 
+  // Check if either image or text is provided
+  const canGenerate = uploadedImage || userContext.trim().length > 0;
+
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">
-          Upload a Reference Photo
+          Upload a Reference Photo (Optional)
         </label>
         <input
           type="file"
@@ -145,19 +167,19 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">
-          Additional Context (optional)
+          Description or Context {!uploadedImage && "(Required if no image)"}
         </label>
         <textarea
           value={userContext}
           onChange={(e) => setUserContext(e.target.value)}
-          placeholder="Describe any specific details you want in your portrait..."
+          placeholder="Describe the portrait you want to create..."
           className="w-full p-2 border rounded"
           rows="3"
         />
       </div>
       <button
         onClick={generatePrompt}
-        disabled={!uploadedImage || isGenerating}
+        disabled={!canGenerate || isGenerating}
         className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
       >
         {isGenerating ? "Generating..." : "Generate with Gemini AI"}

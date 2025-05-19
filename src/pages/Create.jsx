@@ -440,7 +440,7 @@ const Create = () => {
             <p className="font-medium">Your current credits: ${credits.toFixed(2)}</p>
             <div className="mb-6">
                 <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                    className="bg-blue-500 text-white px-4 py-2 rounded add-credits-button"
                     onClick={handleCheckout}
                 >
                     Add more credits
@@ -487,7 +487,7 @@ const Create = () => {
                 )}
 
                 {/* Training Section */}
-                <div className="mt-6 p-4 bg-white rounded-lg border">
+                <div className="mt-6 p-4 bg-white rounded-lg border train-model-section">
                     <h3 className="text-lg font-semibold mb-2">Train New Model</h3>
                     <div className="mb-4">
                         <label className="block mb-2">Model Name:</label>
@@ -521,7 +521,7 @@ const Create = () => {
 
                         {/* Section for Form Inputs */}
                         {userId && (
-                            <div>
+                            <div className="customize-portrait-section">
                                 <h2 className="text-xl font-semibold mb-4">2. Customize Your Portrait</h2>
 
                             {/* Prompt Type Toggle */}
@@ -672,7 +672,7 @@ const Create = () => {
                                         type="button"
                                         onClick={handleGenerate}
                                         disabled={loading}
-                                        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+                                        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 generate-button"
                                     >
                                         {loading ? 'Generating...' : 'Generate Portrait'}
                                     </button>

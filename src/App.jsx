@@ -4,7 +4,9 @@ import Create from './pages/Create';
 import Navigation from './components/NavBar';
 import Gallery from './pages/Gallery';
 import { AuthProvider } from './contexts/AuthContext';
+import TutorialButton from './components/TutorialButton';
 import './App.css';
+import './tutorial.css';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -21,6 +23,8 @@ function App() {
             <Route path="/create" element={<Create />} />
             <Route path="/gallery" element={<Gallery />} />
           </Routes>
+          {/* Tutorial Button */}
+          <TutorialButton />
         </div>
       </Router>
     </AuthProvider>
