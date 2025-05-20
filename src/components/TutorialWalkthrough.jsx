@@ -143,7 +143,7 @@ const TutorialWalkthrough = ({ onComplete }) => {
               alt={`Tutorial step ${currentStep + 1}`}
               style={{
                 maxWidth: "100%",
-                maxHeight: "350px",
+                maxHeight: "300px",
                 objectFit: "contain",
               }}
             />
