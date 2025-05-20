@@ -1,4 +1,11 @@
+import { fal } from "@fal-ai/client";
 import { auth } from '../firebase/config';
+
+// Make sure this is properly initialized
+fal.config({
+  credentials: import.meta.env.VITE_FAL_API_KEY,
+});
+
 
 // Function to generate a portrait prompt based on an image and context
 // This simulates a Gemini API integration

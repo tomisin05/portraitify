@@ -4,14 +4,14 @@ import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const AIPromptGenerator = ({ onPromptGenerated }) => {
+const AIPromptGenerator = ({ onPromptGenerated, onPromptSaved }) => {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [userContext, setUserContext] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
-  
+
   const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   const handleImageUpload = (e) => {
@@ -45,7 +45,7 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
       });
 
       let result;
-      
+
       if (uploadedImage) {
         // If image is provided, use vision capabilities
         const systemPrompt = userContext
@@ -54,7 +54,6 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
              
              IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases. 
              The prompt should work on its own without seeing the original image.`
-          
           : `Analyze this image and create a detailed portrait prompt that describes the style, lighting, pose, and mood.
              
              IMPORTANT: Create a standalone prompt that does NOT mention "this image", "reference image", or any similar phrases.
@@ -81,7 +80,7 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
           
           The prompt should describe style, lighting, pose, mood, and other visual elements for a professional portrait.
           Make it detailed and specific enough to guide an AI image generator.`;
-          
+
         result = await model.generateContent({
           contents: [
             {
@@ -94,7 +93,7 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
 
       const response = await result.response;
       const text = await response.text();
-      
+
       // Clean up the prompt to remove any remaining references to the image
       const cleanedPrompt = text
         .replace(/this (reference )?image/gi, "the portrait")
@@ -125,13 +124,18 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
 
     setIsSaving(true);
     try {
-      await addDoc(collection(db, "savedPrompts"), {
+      const docRef = await addDoc(collection(db, "savedPrompts"), {
         userId: user.uid,
         prompt: generatedPrompt,
         createdAt: new Date().toISOString(),
         imagePreview: uploadedImage,
       });
       alert("Prompt saved successfully!");
+
+      // Call the callback to refresh saved prompts list
+      if (onPromptSaved) {
+        onPromptSaved();
+      }
     } catch (error) {
       console.error("Error saving prompt:", error);
       alert("Failed to save prompt");
@@ -180,9 +184,9 @@ const AIPromptGenerator = ({ onPromptGenerated }) => {
       <button
         onClick={generatePrompt}
         disabled={!canGenerate || isGenerating}
-        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
       >
-        {isGenerating ? "Generating..." : "Generate with Gemini AI"}
+        {isGenerating ? "Generating..." : "Generate with AI"}
       </button>
       {generatedPrompt && (
         <div className="mt-4">
